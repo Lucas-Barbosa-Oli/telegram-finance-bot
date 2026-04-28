@@ -1,6 +1,7 @@
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from typing import Optional
 
 load_dotenv()
 
@@ -8,7 +9,7 @@ url: str = os.environ.get("SUPABASE_URL", "")
 key: str = os.environ.get("SUPABASE_KEY", "")
 
 if url and key:
-    supabase: Client = create_client(url, key)
+    supabase: Optional[Client] = create_client(url, key)
 else:
     supabase = None
 
@@ -45,4 +46,17 @@ async def get_monthly_summary(user_id: int, month: int, year: int):
         .lte("created_at", end_date) \
         .execute()
     
+    return response.data
+
+async def get_recent_transactions(user_id: int, limit: int = 10):
+    if supabase is None:
+        raise RuntimeError("Supabase client is not configured. Set SUPABASE_URL and SUPABASE_KEY.")
+
+    response = supabase.table("transactions") \
+        .select("*") \
+        .eq("user_id", user_id) \
+        .order("created_at", desc=True) \
+        .limit(limit) \
+        .execute()
+
     return response.data

@@ -1,8 +1,8 @@
-from aiogram import Router, F
+from aiogram import Router
 from aiogram.types import Message, BufferedInputFile
 from aiogram.filters import Command
 from utils.ai_parser import parse_expense_text
-from database.client import add_transaction, get_monthly_summary
+from database.client import add_transaction, get_monthly_summary, get_recent_transactions
 from utils.reports import generate_expense_pie_chart
 import datetime
 
@@ -18,6 +18,10 @@ async def cmd_start(message: Message):
 
 @router.message(Command("resumo"))
 async def cmd_summary(message: Message):
+    if message.from_user is None:
+        await message.answer("Não consegui identificar seu usuário no Telegram.")
+        return
+
     now = datetime.datetime.now()
     summary = await get_monthly_summary(message.from_user.id, now.month, now.year)
     
@@ -38,6 +42,10 @@ async def cmd_summary(message: Message):
 
 @router.message(Command("grafico"))
 async def cmd_chart(message: Message):
+    if message.from_user is None:
+        await message.answer("Não consegui identificar seu usuário no Telegram.")
+        return
+
     now = datetime.datetime.now()
     summary = await get_monthly_summary(message.from_user.id, now.month, now.year)
     
@@ -54,9 +62,40 @@ async def cmd_chart(message: Message):
     photo = BufferedInputFile(chart_buf.read(), filename="chart.png")
     await message.answer_photo(photo, caption=f"Distribuição de gastos em {now.strftime('%B/%Y')}")
 
+@router.message(Command("extrato"))
+async def cmd_statement(message: Message):
+    if message.from_user is None:
+        await message.answer("Não consegui identificar seu usuário no Telegram.")
+        return
+
+    transactions = await get_recent_transactions(message.from_user.id, limit=15)
+
+    if not transactions:
+        await message.answer("Nenhuma transação encontrada para exibir no extrato.")
+        return
+
+    text = "🧾 *Extrato (últimos lançamentos)*\n\n"
+    for item in transactions:
+        trans_type = item.get("type", "")
+        type_emoji = "💰" if trans_type == "income" else "💸"
+        date_raw = item.get("created_at", "")
+        date_str = date_raw.split("T")[0] if date_raw else "sem data"
+        category = item.get("category", "sem categoria")
+        amount = float(item.get("amount", 0))
+        description = item.get("description", "") or "-"
+        text += (
+            f"{type_emoji} `{date_str}` | *{category}* | R$ {amount:.2f}\n"
+            f"_{description}_\n\n"
+        )
+
+    await message.answer(text, parse_mode="Markdown")
+
 @router.message()
 async def process_text(message: Message):
     # Ignore commands
+    if not message.text:
+        return
+
     if message.text.startswith('/'):
         return
 
@@ -69,6 +108,10 @@ async def process_text(message: Message):
         return
 
     try:
+        if message.from_user is None:
+            await wait_msg.edit_text("Não consegui identificar seu usuário no Telegram.")
+            return
+
         await add_transaction(
             user_id=message.from_user.id,
             amount=data['amount'],
