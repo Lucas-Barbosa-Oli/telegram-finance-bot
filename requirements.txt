@@ -4,3 +4,4 @@ python-dotenv
 httpx
 matplotlib
 pandas
+mcp==1.27.0

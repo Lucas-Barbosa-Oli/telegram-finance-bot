@@ -33,9 +33,18 @@ pip install -r requirements.txt
 
 ## Como usar no bot atual
 
-- Mantenha o bot atual funcionando normalmente.
-- Comece migrando comandos aos poucos para chamar as tools daqui.
-- Sugestao de ordem: `/extrato` -> `/resumo` -> gravacao de transacao.
+- O bot atual usa `client.finance_client()` para chamar o servidor `finance` via stdio.
+- O servidor pode ser executado diretamente com:
+
+```bash
+python -m servers.finance
+```
+
+- Para listar os servidores disponiveis:
+
+```bash
+python -m servers
+```
 
 ## Contrato de resposta recomendado
 
@@ -46,6 +55,6 @@ Todas as tools retornam:
 
 ## Proximos passos
 
-- Adicionar servidor MCP (transporte stdio/http) por cima dessas funcoes.
+- Adicionar transporte HTTP/SSE quando houver mais de um consumidor simultaneo.
 - Adicionar autenticacao por token para ambiente externo.
 - Versionar tools por dominio (`v1`, `v2`) quando houver quebra de contrato.
