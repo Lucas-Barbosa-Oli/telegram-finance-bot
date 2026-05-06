@@ -6,8 +6,25 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
     category TEXT NOT NULL,
     description TEXT,
+    status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('planned', 'confirmed')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Backward-compatible migration for existing databases
+ALTER TABLE public.transactions
+ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'confirmed';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'transactions_status_check'
+    ) THEN
+        ALTER TABLE public.transactions
+        ADD CONSTRAINT transactions_status_check CHECK (status IN ('planned', 'confirmed'));
+    END IF;
+END $$;
 
 -- Index for faster queries by user and date
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON public.transactions(user_id);

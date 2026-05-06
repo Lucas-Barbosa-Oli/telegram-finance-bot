@@ -27,6 +27,11 @@ async def main():
             BotCommand(command="ajuda", description="ver exemplos e comandos"),
             BotCommand(command="resumo", description="resumo do mês"),
             BotCommand(command="extrato", description="últimos lançamentos"),
+            BotCommand(command="pendentes", description="lançamentos planejados"),
+            BotCommand(command="contas", description="visão separada das contas"),
+            BotCommand(command="confirmar", description="confirmar um lançamento por id"),
+            BotCommand(command="desconfirmar", description="desconfirmar um lançamento por id"),
+            BotCommand(command="cancelar", description="cancelar/remover lançamento por id"),
             BotCommand(command="relatorio", description="ganhos e gastos por categoria"),
             BotCommand(command="grafico", description="gráfico de gastos"),
         ]
