@@ -144,7 +144,7 @@ inválida, oferece o registro explícito. A IA não executa SQL nem calcula rela
 - Índices por usuário/data e usuário/ID; exclusão lógica.
 - Limite de 50.000 registros por consulta: recusa em vez de devolver total parcial.
 - PNG local, sem serviço externo de gráficos; matplotlib só é carregado ao pedir gráfico.
-- Dependências diretas fixadas e constraints.txt com versões transitivas verificadas.
+- Dependências diretas e transitivas fixadas em requirements.txt, compatível com o build da Vercel.
 
 pip install -r requirements-dev.txt
 python -m pytest -q
