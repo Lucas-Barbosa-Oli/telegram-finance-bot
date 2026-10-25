@@ -40,3 +40,8 @@ async def webhook(request: Request):
         logging.getLogger(__name__).error('Webhook failed (%s)', type(exc).__name__)
         raise HTTPException(503, 'Temporarily unavailable') from None
     return {'ok': True}
+
+# Opt-in provisioning route; absent after the temporary token is removed.
+if os.getenv('BOT_SETUP_TOKEN'):
+    from bot.provisioning import provision
+    app.post('/admin/bootstrap')(provision)
