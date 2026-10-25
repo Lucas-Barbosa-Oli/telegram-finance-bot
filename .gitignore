@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Deployment and isolated SQL tests
+.vercel/
+node_modules/

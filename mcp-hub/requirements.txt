@@ -1,4 +1,0 @@
-python-dotenv
-supabase==2.15.3
-httpx
-mcp==1.27.0
