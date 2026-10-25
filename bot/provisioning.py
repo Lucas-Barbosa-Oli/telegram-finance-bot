@@ -59,7 +59,7 @@ async def provision(request: Request):
                 elif action.startswith('verify_'):
                     # Only read-only commands, sent through the real authenticated webhook.
                     user = min(settings.users)
-                    command = '/resumo' if action == 'verify_summary' else '/grafico'
+                    command = '/resumo tudo' if action == 'verify_summary' else '/grafico tudo'
                     update = {
                         'update_id': 2_000_000_000,
                         'message': {
@@ -88,3 +88,4 @@ async def provision(request: Request):
     except Exception as exc:
         logging.getLogger(__name__).error('Provisioning failed (%s)', type(exc).__name__)
         raise HTTPException(503, 'Provisioning failed; inspect runtime logs') from None
+
