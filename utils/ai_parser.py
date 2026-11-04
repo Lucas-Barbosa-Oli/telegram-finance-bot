@@ -7,8 +7,8 @@ import httpx
 from utils.domain import Transaction, normalize, parse_money, today
 
 CATEGORIES = {
-    'Alimentação': ('alimentacao', 'mercado', 'supermercado', 'pizza', 'comida', 'almoco', 'jantar', 'lanche', 'restaurante', 'cafe', 'food', 'groceries', 'lunch'),
-    'Transporte': ('transporte', 'uber', 'taxi', 'onibus', 'gasolina', 'combustivel', 'metro', 'bus', 'fuel'),
+    'Alimentação': ('alimentacao', 'mercado', 'supermercado', 'pizza', 'comida', 'almoco', 'jantar', 'lanche', 'restaurante', 'cafe', 'ifood', 'padaria', 'food', 'groceries', 'lunch'),
+    'Transporte': ('transporte', 'uber', 'taxi', 'onibus', 'gasolina', 'combustivel', 'metro', 'corrida', 'bus', 'fuel'),
     'Moradia': ('moradia', 'aluguel', 'condominio', 'energia', 'luz', 'agua', 'internet', 'rent'),
     'Saúde': ('farmacia', 'remedio', 'medico', 'consulta', 'saude'),
     'Lazer': ('cinema', 'netflix', 'jogo', 'show', 'lazer'),
@@ -16,7 +16,10 @@ CATEGORIES = {
     'Salário': ('salario', 'salary'),
     'Freelance': ('freela', 'freelance'),
 }
-AMOUNT = re.compile(r'(?<![\w.,])(?:r\$\s*)?\d+(?:[.,]\d+)*(?![\w.,])', re.I)
+AMOUNT = re.compile(r'(?<![\w.,])(?:r\$\s*)?\d+(?:[.,]\d+)*(?!\w|[.,]+\d)', re.I)
+INCOME = re.compile(r'\b(recebi|ganhei|entrada|receita|received|earned|income|entrou|caiu|me pagou|me (?:mandou|passou) (?:um )?pix|a receber)\b')
+EXPENSE = re.compile(r'\b(gastei|paguei|comprei|gasto|despesa|saida|spent|paid|bought|expense|pagar|saiu|desembolsei|torrei|passei (?:no|na) (?:debito|credito))\b')
+CURRENCY_WORD = r'(?:real|reais|conto[s]?|pila[s]?|mangos?)'
 
 
 def infer_category(text):
@@ -28,7 +31,7 @@ def parse_local(text, reference=None):
     ref, value = reference or today(), normalize(text)
     if not text or len(text) > 500 or '?' in text or '%' in text:
         return None
-    if re.search(r'\b(nao|not|quanto|how|talvez|maybe|se|if|estorno|reembolso|refund|emprestei|transferi|transferencia|transfer|devo|dividi)\b', value):
+    if re.search(r'\b(nao|not|quanto|how|qual|quais|mostre|mostrar|liste|talvez|maybe|se|if|estorno|reembolso|refund|emprestei|transferi|transferencia|transfer|devo|dividi|seria|custaria|queria|pretendo)\b', value):
         return None
     if re.search(r'\b(usd|eur|dolar|dolares|euro|euros)\b|[$€£]', value.replace('r$', '')):
         return None
@@ -51,19 +54,27 @@ def parse_local(text, reference=None):
         value = re.sub(r'\b(hoje|ontem|amanha|today|yesterday|tomorrow)\b', '', value)
     if re.search(r'\b(dia|mes|semana|passad\w*|proxim\w*|last|next|ago|days?|monday|segunda|terca|quarta|quinta|sexta|sabado|domingo)\b|\d/\d', value):
         return None
-    income = bool(re.search(r'\b(recebi|ganhei|entrada|receita|received|earned|income)\b', value))
-    expense = bool(re.search(r'\b(gastei|paguei|comprei|gasto|despesa|saida|spent|paid|bought|expense|pagar)\b', value))
-    if income == expense:
-        if income or infer_category(value) == 'Outros' or not re.fullmatch(r'(?:[a-z]+\s+)?(?:r\$\s*)?\d+(?:[.,]\d+)*(?:\s+[a-z]+)?', value.strip()):
-            return None
-        income = infer_category(value) in ('Salário', 'Freelance')
+    category = infer_category(value)
+    income = bool(INCOME.search(value))
+    expense = bool(EXPENSE.search(value))
     matches = list(AMOUNT.finditer(value))
-    if len(matches) != 1 or re.search(r'-\s*\d|\d\s*(?:mil|k|milhao)\b', value):
+    if len(matches) != 1 or re.search(r'-\s*(?:r\$\s*)?\d|\d\s*(?:mil|k|milhao)\b', value):
         return None
+    if income == expense:
+        if income or category == 'Outros':
+            return None
+        # A shorthand needs a known category and a clear amount-to-item link.
+        words = '|'.join(map(re.escape, CATEGORIES[category]))
+        shorthand = rf'(?:(?:a|o)\s+)?(?:{words})(?:\s+(?:deu|foi|de))?\s+@(?:\s+{CURRENCY_WORD})?'
+        shorthand += rf'|@(?:\s+{CURRENCY_WORD})?\s+(?:(?:no|na|de|do|da|em|pro|pra)\s+)?(?:{words})'
+        item = value[:matches[0].start()] + '@' + value[matches[0].end():]
+        if not re.fullmatch(shorthand, ' '.join(item.strip(' .,!').split())):
+            return None
+        income = category in ('Salário', 'Freelance')
     try:
         amount = parse_money(matches[0][0])
-        status = 'planned' if when > ref or re.search(r'\b(vou|planejado|pendente|previsto|will)\b|a pagar', value) else 'confirmed'
-        return Transaction.from_dict(dict(amount=amount, type='income' if income else 'expense', category=infer_category(value), description=text, occurred_on=when, status=status))
+        status = 'planned' if when > ref or re.search(r'\b(vou|planejado|pendente|previsto|will)\b|a pagar|a receber', value) else 'confirmed'
+        return Transaction.from_dict(dict(amount=amount, type='income' if income else 'expense', category=category, description=text, occurred_on=when, status=status))
     except ValueError:
         return None
 

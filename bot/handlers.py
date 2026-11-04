@@ -13,6 +13,8 @@ Envie uma compra ou recebimento:
 • gastei 50 reais em mercado
 • paguei 25,90 no Uber ontem
 • recebi meu salário de 3000
+• 30 conto no mercado
+• caiu 3000 de salário
 • vou pagar 900 de aluguel amanhã
 
 Consultas:
@@ -36,7 +38,8 @@ Consultas:
  /cancelar ID — pede confirmação para excluir
 
 Períodos: hoje, ontem, semana, mês passado, 2026-10
-ou 2026-10-01 2026-10-23. Padrão: mês atual.
+ou 2026-10-01 2026-10-23. Padrão: ciclo atual, do dia 10 ao dia 9.
+2026-10 seleciona o ciclo que começa em 10/10/2026.
 Filtro opcional: categoria:Alimentação (no final).
 Registro explícito:
  /gasto 25,90 Alimentação 2026-10-22 Almoço
@@ -137,8 +140,8 @@ async def show_report(message, store, action, text):
     label = period.label if period else 'Todo o histórico'
     if category:
         label += f' • {category}'
-    income = bool(re.search(r'\b(entradas?|ganhos?|receitas?|recebi|ganhei|income|earned)\b', value))
-    expense = bool(re.search(r'\b(saidas?|gastos?|despesas?|gastei|spent|expenses?)\b', value))
+    income = bool(re.search(r'\b(entradas?|ganhos?|receitas?|recebi|ganhei|entrou|caiu|income|earned)\b', value))
+    expense = bool(re.search(r'\b(saidas?|gastos?|despesas?|gastei|paguei|saiu|spent|expenses?)\b', value))
     kind = ('income' if income else 'expense') if income != expense else None
     status = 'planned' if action == 'pendentes' else None
     is_list = action in ('extrato', 'pendentes')

@@ -37,8 +37,10 @@ valores, datas ou intenções ambíguas. Não faz conversão de moedas. Texto é
 | /ajuda | Exemplos completos |
 
 Relatórios aceitam hoje, ontem, semana (segunda a domingo), mês passado, 2026-10,
-outubro 2026 ou intervalo inclusivo como 2026-10-01 2026-10-23. O padrão é o mês
-atual em America/Sao_Paulo. Use "tudo" para todo o histórico e
+outubro 2026 ou intervalo inclusivo como 2026-10-01 2026-10-23. O padrão é o ciclo
+financeiro atual, do dia 10 ao dia 9 do mês seguinte em America/Sao_Paulo.
+Um mês informado pelo nome ou número identifica o ciclo que começa no dia 10
+daquele mês. Use "tudo" para todo o histórico e
 "categoria:Alimentação" ao final para filtro exato. Filtros de categoria por linguagem
 natural usam as categorias conhecidas; categorias próprias podem ser consultadas
 explicitamente. "Entradas" e "saídas" filtram o tipo.
