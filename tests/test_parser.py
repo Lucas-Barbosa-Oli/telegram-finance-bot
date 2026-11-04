@@ -15,6 +15,11 @@ REF = date(2026, 10, 23)
     ('comprei um livro por 1.234,56 em 2026-09-30', '1234.56', 'expense', date(2026,9,30), 'confirmed'),
     ('vou pagar 900 de aluguel amanhã', '900.00', 'expense', date(2026,10,24), 'planned'),
     ('mercado 80', '80.00', 'expense', REF, 'confirmed'),
+    ('30 conto no mercado.', '30.00', 'expense', REF, 'confirmed'),
+    ('caiu 3500 de salário!', '3500.00', 'income', REF, 'confirmed'),
+    ('me mandou um pix de 120 do freela', '120.00', 'income', REF, 'confirmed'),
+    ('a padaria deu 19,50', '19.50', 'expense', REF, 'confirmed'),
+    ('saiu 18,90 pro Uber ontem', '18.90', 'expense', date(2026,10,22), 'confirmed'),
     ('I spent 12.50 on lunch yesterday', '12.50', 'expense', date(2026,10,22), 'confirmed'),
     ('paguei 20 no mercado 01/10/2026', '20.00', 'expense', date(2026,10,1), 'confirmed'),
 ])
@@ -31,6 +36,7 @@ def test_local(text, amount, kind, when, status):
     'gastei 20 USD em mercado', 'gastei $20 em mercado', 'gastei 50 e recebi 20',
     'transferi 100 para poupança', 'talvez pague 40 no mercado', 'gastei NaN',
     'gastei 20 em mercado hoje e ontem',
+    'me mandou 50 mensagens', 'paguei -R$ 50', 'paguei 20,,30',
 ])
 def test_ambiguous_not_saved(text):
     assert parse_local(text, REF) is None
@@ -45,15 +51,24 @@ def test_invalid_money(text):
         parse_money(text)
 
 @pytest.mark.parametrize('text,start,end', [
-    ('mês passado','2026-09-01','2026-10-01'), ('2024-02','2024-02-01','2024-03-01'),
-    ('2026-12','2026-12-01','2027-01-01'), ('ontem','2026-10-22','2026-10-23'),
+    ('mês passado','2026-09-10','2026-10-10'), ('2024-02','2024-02-10','2024-03-10'),
+    ('2026-12','2026-12-10','2027-01-10'), ('ontem','2026-10-22','2026-10-23'),
     ('semana','2026-10-19','2026-10-26'), ('semana passada','2026-10-12','2026-10-19'),
     ('2026-10-01 2026-10-23','2026-10-01','2026-10-24'),
-    ('setembro 2025','2025-09-01','2025-10-01'),
+    ('setembro 2025','2025-09-10','2025-10-10'),
 ])
 def test_period(text,start,end):
     p = parse_period(text, REF)
     assert (p.start.isoformat(),p.end.isoformat()) == (start,end)
+
+@pytest.mark.parametrize('day,text,start,end', [
+    (9, 'este mês', date(2025, 12, 10), date(2026, 1, 10)),
+    (10, 'este mês', date(2026, 1, 10), date(2026, 2, 10)),
+    (9, 'mês passado', date(2025, 11, 10), date(2025, 12, 10)),
+])
+def test_cycle_boundary(day, text, start, end):
+    period = parse_period(text, date(2026, 1, day))
+    assert (period.start, period.end) == (start, end)
 
 @pytest.mark.parametrize('text', ['2026-13','2026-10-23 2026-10-01','últimos 30 dias','2026-02-31'])
 def test_bad_period(text):

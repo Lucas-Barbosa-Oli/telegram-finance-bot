@@ -82,8 +82,17 @@ class Period:
         return f'{self.start:%d/%m/%Y} a {self.end - timedelta(days=1):%d/%m/%Y}'
 
 
+FINANCIAL_MONTH_START = 10
+
+
 def month_period(year, month):
-    return Period(date(year, month, 1), date(year + (month == 12), month % 12 + 1, 1))
+    return Period(date(year, month, FINANCIAL_MONTH_START),
+                  date(year + (month == 12), month % 12 + 1, FINANCIAL_MONTH_START))
+
+
+def financial_month(day):
+    start = day if day.day >= FINANCIAL_MONTH_START else day.replace(day=1) - timedelta(days=1)
+    return month_period(start.year, start.month)
 
 
 MONTHS = ('janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro')
@@ -115,12 +124,11 @@ def parse_period(text, reference=None):
             start -= timedelta(days=7)
         return Period(start, start + timedelta(days=7))
     if re.search(r'mes passado|mes anterior|last month', value):
-        prev = ref.replace(day=1) - timedelta(days=1)
-        return month_period(prev.year, prev.month)
+        return financial_month(financial_month(ref).start - timedelta(days=1))
     for month, name in enumerate(MONTHS, 1):
         if re.search(rf'\b{name}\b', value):
             year = re.search(r'\b(20\d{2})\b', value)
             return month_period(int(year[1]) if year else ref.year, month)
     if re.search(r'\d|ano|year|amanha|tomorrow|ultim|last|proxim|next', value):
         raise ValueError('Período não reconhecido. Use hoje, ontem, semana, mês passado, AAAA-MM ou AAAA-MM-DD AAAA-MM-DD.')
-    return month_period(ref.year, ref.month)
+    return financial_month(ref)

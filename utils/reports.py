@@ -5,8 +5,9 @@ import os
 import tempfile
 import threading
 from collections import defaultdict
+from datetime import date
 from decimal import Decimal
-from utils.domain import currency
+from utils.domain import currency, financial_month
 
 _CHART_LOCK = threading.Lock()
 
@@ -72,15 +73,16 @@ def generate_chart(rows, label):
         monthly = defaultdict(lambda: {'income': Decimal(0), 'expense': Decimal(0)})
         for row in rows:
             if row.get('status', 'confirmed') == 'confirmed':
-                monthly[row['occurred_on'][:7]][row['type']] += Decimal(str(row['amount']))
+                start = financial_month(date.fromisoformat(row['occurred_on'])).start
+                monthly[start][row['type']] += Decimal(str(row['amount']))
         months = sorted(monthly)
         x = list(range(len(months)))
         bottom.bar([i - .2 for i in x], [float(monthly[m]['income']) for m in months], width=.4, label='Entradas', color='#238b6d')
         bottom.bar([i + .2 for i in x], [float(monthly[m]['expense']) for m in months], width=.4, label='Saídas', color='#e26a51')
         step = max(1, (len(months) + 11) // 12)
-        bottom.set_xticks(x[::step], months[::step], rotation=30)
+        bottom.set_xticks(x[::step], [month.strftime('%d/%m/%Y') for month in months[::step]], rotation=30)
         bottom.set_ylabel('R$')
-        bottom.set_title('Entradas e saídas confirmadas')
+        bottom.set_title('Entradas e saídas confirmadas por ciclo')
         bottom.legend()
         fig.suptitle(label, fontsize=13, weight='bold')
         output = io.BytesIO()
